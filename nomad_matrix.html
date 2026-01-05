@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>MINIMAL_NODE :: MATRIX MODE</title>
+
+<style>
+/* ====== RESET ====== */
+* { box-sizing: border-box; }
+
+/* ====== BODY ====== */
+body {
+  margin: 0;
+  background: black;
+  color: #00ff66;
+  font-family: "Courier New", monospace;
+  overflow: hidden;
+}
+
+/* ====== MATRIX CANVAS ====== */
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+/* ====== TERMINAL ====== */
+#terminal {
+  position: relative;
+  z-index: 2;
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+  height: 100vh;
+  overflow-y: auto;
+  text-shadow: 0 0 8px #00ff66;
+}
+
+/* ====== SCANLINES ====== */
+#scanlines {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(0,0,0,0.15) 3px
+  );
+}
+
+/* ====== PROMPT ====== */
+.prompt {
+  color: #00ffaa;
+}
+
+input {
+  background: transparent;
+  border: none;
+  color: #00ff66;
+  outline: none;
+  font-family: inherit;
+  font-size: 1em;
+  width: 80%;
+}
+
+/* ====== TEXT STYLES ====== */
+.dim { color: #009944; }
+.alert {
+  color: #ff4444;
+  text-shadow: 0 0 10px #ff0000;
+}
+
+/* ====== BLINK CURSOR ====== */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+.cursor {
+  animation: blink 1s infinite;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="matrix"></canvas>
+<div id="scanlines"></div>
+<div id="terminal"></div>
+
+<script>
+/* ===============================
+   MATRIX BACKGROUND EFFECT
+================================ */
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const letters = "01アイウエオカキクケコABCDEFGHIJKLMNOPQRSTUVWXYZ#$%";
+const fontSize = 14;
+const columns = canvas.width / fontSize;
+const drops = Array.from({ length: columns }).fill(1);
+
+function drawMatrix() {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#00ff66";
+  ctx.font = fontSize + "px monospace";
+
+  drops.forEach((y, i) => {
+    const text = letters[Math.floor(Math.random() * letters.length)];
+    ctx.fillText(text, i * fontSize, y * fontSize);
+    drops[i] = y * fontSize > canvas.height && Math.random() > 0.975 ? 0 : y + 1;
+  });
+}
+
+setInterval(drawMatrix, 50);
+
+window.onresize = () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+};
+
+/* ===============================
+   TERMINAL LOGIC
+================================ */
+const terminal = document.getElementById("terminal");
+
+const banner = `
+┌────────────────────────────────────────────┐
+│  MINIMAL_NODE v1.0                         │
+│  MATRIX / HACKERS 1995 MODE                │
+│  Secure Ephemeral Workstation              │
+│  SIMULATION :: EDUCATIONAL                 │
+└────────────────────────────────────────────┘
+
+Wake up, operator.
+Type 'help' to begin.
+`;
+
+const commands = {
+  help: `
+boot --ephemeral
+net status
+net secure
+id list
+id use <identity>
+env create work_vm
+env status
+core connect
+core sync
+threat simulate laptop_lost
+shutdown --purge
+`,
+  "boot --ephemeral": `
+[ OK ] Memory sandbox initialized
+[ OK ] Disk persistence: DISABLED
+[ OK ] Identity cache: EMPTY
+
+System state: CLEAN
+`,
+  "net status": `
+Network: UNTRUSTED
+Gateway: UNKNOWN
+Risk level: HIGH
+`,
+  "net secure": `
+[ OK ] Encrypted tunnel established
+[ OK ] Kill-switch engaged
+
+Exposure: MINIMAL
+`,
+  "id list": `
+[1] work_research
+[2] admin_core
+[3] personal (LOCKED)
+`,
+  "env create work_vm": `
+[ OK ] Ephemeral environment created
+Persistence: NO
+`,
+  "env status": `
+Containers: RUNNING
+Risk level: CONTROLLED
+`,
+  "core connect": `
+[ OK ] Remote core online
+Data location: OFF-DEVICE
+`,
+  "core sync": `
+[ OK ] Work synchronized
+Local artifacts: NONE
+`,
+  "threat simulate laptop_lost": `
+[ ALERT ] Device compromised
+[ ACTION ] Revoking access
+[ OK ] Core remains secure
+
+Impact: ZERO
+`,
+  "shutdown --purge": `
+[ OK ] Memory wiped
+[ OK ] Identity unloaded
+[ OK ] Session terminated
+
+NO DATA
+NO TRACE
+`
+};
+
+function print(text, cls="") {
+  const div = document.createElement("div");
+  div.className = cls;
+  div.textContent = text;
+  terminal.appendChild(div);
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+function newPrompt() {
+  const line = document.createElement("div");
+  line.innerHTML = `<span class="prompt">node@matrix:~$</span> `;
+  const input = document.createElement("input");
+  line.appendChild(input);
+  terminal.appendChild(line);
+  input.focus();
+
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      const cmd = input.value.trim();
+      input.disabled = true;
+      handleCommand(cmd);
+    }
+  });
+}
+
+function handleCommand(cmd) {
+  if (cmd.startsWith("id use")) {
+    print("[ OK ] Identity loaded\nScope: LIMITED\nTTL: 2h");
+  } else if (commands[cmd]) {
+    print(commands[cmd]);
+  } else {
+    print("Command not recognized.", "dim");
+  }
+  newPrompt();
+}
+
+print(banner);
+newPrompt();
+</script>
+
+</body>
+</html>

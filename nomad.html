@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>MINIMAL_NODE v1.0</title>
+<style>
+  body {
+    background: #000;
+    color: #00ff66;
+    font-family: "Courier New", monospace;
+    margin: 0;
+    padding: 20px;
+  }
+  #terminal {
+    max-width: 900px;
+    margin: auto;
+    line-height: 1.4;
+  }
+  .prompt {
+    color: #00ffaa;
+  }
+  input {
+    background: transparent;
+    border: none;
+    color: #00ff66;
+    outline: none;
+    font-family: inherit;
+    font-size: 1em;
+    width: 90%;
+  }
+  .dim { color: #009944; }
+  .alert { color: #ff5555; }
+</style>
+</head>
+
+<body>
+<div id="terminal"></div>
+
+<script>
+const terminal = document.getElementById("terminal");
+
+const banner = `
+┌──────────────────────────────────────────┐
+│  MINIMAL_NODE v1.0                       │
+│  Secure Ephemeral Workstation            │
+│  MODE: EDUCATIONAL SIMULATION            │
+└──────────────────────────────────────────┘
+
+Type 'help' to list commands.
+`;
+
+const commands = {
+  help: `
+Available commands:
+  boot --ephemeral
+  net status
+  net secure
+  id list
+  id use <name>
+  env create work_vm
+  env status
+  core connect
+  core sync
+  threat simulate laptop_lost
+  shutdown --purge
+`,
+  "boot --ephemeral": `
+[ OK ] Memory sandbox initialized
+[ OK ] Disk persistence: DISABLED
+[ OK ] Identity cache: EMPTY
+[ OK ] Local secrets: NONE FOUND
+
+System state: CLEAN
+`,
+  "net status": `
+Network: UNTRUSTED
+Gateway: UNKNOWN
+DNS: UNKNOWN
+Risk level: HIGH
+`,
+  "net secure": `
+[ OK ] Encrypted tunnel established
+[ OK ] DNS hardened
+[ OK ] Kill-switch engaged
+
+External exposure: MINIMAL
+`,
+  "id list": `
+[1] work_research
+[2] admin_core
+[3] personal (LOCKED)
+`,
+  "env create work_vm": `
+[ OK ] Virtual environment created
+Persistence: NO
+Network: RESTRICTED
+Filesystem: TEMPORARY
+`,
+  "env status": `
+Containers: RUNNING
+Secrets in memory: 2
+Risk level: CONTROLLED
+`,
+  "core connect": `
+[ OK ] Remote core reachable
+Data location: OFF-DEVICE
+Local storage used: 0.0 MB
+`,
+  "core sync": `
+[ OK ] Work synchronized
+[ OK ] No sensitive data cached locally
+`,
+  "threat simulate laptop_lost": `
+[ ALERT ] Device assumed compromised
+[ ACTION ] Revoking credentials...
+[ ACTION ] Invalidating sessions...
+[ OK ] Access terminated
+
+Impact: NONE
+`,
+  "shutdown --purge": `
+[ OK ] Memory wiped
+[ OK ] VM destroyed
+[ OK ] Network keys discarded
+[ OK ] Identity unloaded
+
+NO DATA
+NO HISTORY
+NO TRACE
+`
+};
+
+function print(text, cls="") {
+  const div = document.createElement("div");
+  div.className = cls;
+  div.textContent = text;
+  terminal.appendChild(div);
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function newPrompt() {
+  const line = document.createElement("div");
+  line.innerHTML = `<span class="prompt">node@minimal:~$</span> `;
+  const input = document.createElement("input");
+  input.autofocus = true;
+  line.appendChild(input);
+  terminal.appendChild(line);
+  input.focus();
+
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      const cmd = input.value.trim();
+      input.disabled = true;
+      handleCommand(cmd);
+    }
+  });
+}
+
+function handleCommand(cmd) {
+  if (cmd.startsWith("id use")) {
+    print("[ OK ] Identity loaded\nScope: LIMITED\nExpiration: 2h");
+  } else if (commands[cmd]) {
+    print(commands[cmd]);
+  } else {
+    print("Command not recognized. Type 'help'.", "dim");
+  }
+  newPrompt();
+}
+
+print(banner);
+newPrompt();
+</script>
+</body>
+</html>

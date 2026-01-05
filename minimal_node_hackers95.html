@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>MINIMAL_NODE :: HACKERS_95 / MISSIONS + LOG</title>
+
+<style>
+body {
+  margin: 0;
+  background: #000;
+  color: #00ff00;
+  font-family: "Courier New", monospace;
+  font-size: 14px;
+}
+#terminal {
+  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+  height: 100vh;
+  overflow-y: auto;
+}
+.prompt { color: #00ff00; }
+.dim { color: #008800; }
+.warn { color: #ffaa00; }
+.alert { color: #ff3333; }
+
+input {
+  background: transparent;
+  border: none;
+  color: #00ff00;
+  outline: none;
+  font-family: inherit;
+  width: 80%;
+}
+</style>
+</head>
+
+<body>
+<div id="terminal"></div>
+
+<script>
+const terminal = document.getElementById("terminal");
+
+/* ===== SESSION LOG ===== */
+let sessionLog = [];
+function logEntry(text) {
+  sessionLog.push(text);
+}
+
+/* ===== SYSTEM STATE ===== */
+let state = {
+  booted: false,
+  secureNet: false,
+  identity: null,
+  env: false,
+  core: false,
+  risk: 0,
+  locked: false,
+  mission: 1
+};
+
+/* ===== PRINT ===== */
+function print(text, cls="") {
+  const pre = document.createElement("pre");
+  pre.className = cls;
+  pre.textContent = text;
+  terminal.appendChild(pre);
+  terminal.scrollTop = terminal.scrollHeight;
+  logEntry(text);
+}
+
+/* ===== PROMPT ===== */
+function prompt() {
+  if (state.locked) return;
+  const line = document.createElement("div");
+  line.innerHTML = `<span class="prompt">node@hackers95:~$</span> `;
+  const input = document.createElement("input");
+  line.appendChild(input);
+  terminal.appendChild(line);
+  input.focus();
+
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      const cmd = input.value.trim();
+      input.disabled = true;
+      logEntry("> " + cmd);
+      handle(cmd);
+    }
+  });
+}
+
+/* ===== LOCKDOWN ===== */
+function lockdown(reason) {
+  state.locked = true;
+  print(`
+[LOCKDOWN]
+${reason}
+
+SESSION TERMINATED
+`, "alert");
+}
+
+/* ===== EXPORT LOG ===== */
+function exportLog() {
+  const blob = new Blob(
+    [sessionLog.join("\n")],
+    { type: "text/plain;charset=utf-8" }
+  );
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "minimal_node_session.log.txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  print("[OK] session log exported");
+}
+
+/* ===== MISSIONS ===== */
+function missionBrief() {
+  if (state.mission === 1) {
+    print(`
+MISSION 1 :: CLEAN ENTRY
+- boot clean
+- secure network
+- do NOT expose identity
+`, "warn");
+  }
+  if (state.mission === 2) {
+    print(`
+MISSION 2 :: CONTROLLED ACCESS
+- load scoped identity
+- create isolated environment
+`, "warn");
+  }
+  if (state.mission === 3) {
+    print(`
+MISSION 3 :: CORE OPERATION
+- connect to core
+- sync work
+- survive incident
+`, "warn");
+  }
+}
+
+/* ===== COMMAND HANDLER ===== */
+function handle(cmd) {
+
+  if (state.locked) return;
+
+  if (cmd === "export log") {
+    exportLog();
+    prompt();
+    return;
+  }
+
+  if (cmd === "boot --ephemeral") {
+    state.booted = true;
+    print("[OK] system booted clean");
+    missionBrief();
+  }
+
+  else if (cmd === "net secure") {
+    if (!state.booted) {
+      state.risk++;
+      print("[WARN] system not booted clean", "warn");
+    }
+    state.secureNet = true;
+    print("[OK] encrypted tunnel enforced");
+  }
+
+  else if (cmd === "net status") {
+    print(`
+network: ${state.secureNet ? "SECURED" : "UNTRUSTED"}
+risk: ${state.risk}
+`);
+  }
+
+  else if (cmd.startsWith("id use")) {
+    if (!state.secureNet) {
+      lockdown("identity exposed on untrusted network");
+      return;
+    }
+    state.identity = "scoped";
+    print("[OK] scoped identity loaded");
+    state.mission = 2;
+    missionBrief();
+  }
+
+  else if (cmd === "env create work_vm") {
+    if (!state.identity) {
+      state.risk++;
+      print("[WARN] env without identity increases risk", "warn");
+    }
+    state.env = true;
+    print("[OK] isolated environment created");
+  }
+
+  else if (cmd === "core connect") {
+    if (!state.env) {
+      lockdown("core accessed from non-isolated environment");
+      return;
+    }
+    state.core = true;
+    print("[OK] connected to remote core");
+    state.mission = 3;
+    missionBrief();
+  }
+
+  else if (cmd === "core sync") {
+    if (!state.core) {
+      print("[FAIL] no core connection", "alert");
+    } else {
+      print("[OK] work synced. no local artifacts");
+    }
+  }
+
+  else if (cmd === "threat simulate loss") {
+    if (!state.core) {
+      lockdown("device lost before core sync");
+      return;
+    }
+    print(`
+[ALERT] device compromised
+[ACTION] revoking access
+impact: ZERO
+`, "warn");
+  }
+
+  else if (cmd === "shutdown --purge") {
+    print(`
+[OK] memory wiped
+[OK] environment destroyed
+
+MISSION COMPLETE
+NO DATA
+NO TRACE
+`);
+    state.locked = true;
+    return;
+  }
+
+  else {
+    state.risk++;
+    print("unknown command", "dim");
+    if (state.risk >= 3) {
+      lockdown("excessive unsafe actions");
+      return;
+    }
+  }
+
+  prompt();
+}
+
+/* ===== INIT ===== */
+print(`
+MINIMAL_NODE / hackers_95
+-------------------------
+educational simulation
+-------------------------
+
+RULES:
+- mistakes accumulate
+- order matters
+- security is discipline
+
+Type: boot --ephemeral
+`);
+prompt();
+</script>
+</body>
+</html>
