@@ -1,1 +1,3 @@
 # nomad
+
+especificaciones 
